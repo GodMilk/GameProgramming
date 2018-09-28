@@ -1,0 +1,229 @@
+<html>
+	<head>
+		<style>
+			#info {
+			  position: absolute;
+			  top: 2%;
+			  width: 100%;
+			  padding: 10px;
+			  text-align: center;
+			  color: #ffff00
+			}
+
+			body {
+			  overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="info">讓火車在XZ平面上，依+Y軸做等速圓周運動<br/>
+			Press Z to toggle<br/><br/>
+			<button id="toggle" style="width:20%">stop</button>
+		</div>
+		<script src="../js/three.min.js"></script>
+		<script src="../js/OrbitControls.js"></script>
+		<script src="../js/KeyboardState.js"></script>
+		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+		<script>
+			var renderer, scene, camera, controls;
+			var thomasAngle = 0,myAngle = 0,planeAngle = 0;
+			var train, thomasTrain, plane;
+			var bumpMap;
+			var planeHeight = 60,upOrDown = "down";
+			var turn = true;
+			var keyboard = new KeyboardState();
+
+			init();
+			animate();
+			/*左上角status**********************************************************************/
+			javascript: (function() {
+			  var script = document.createElement('script');
+			  script.onload = function() {
+				var stats = new Stats();
+				document.body.appendChild(stats.dom);
+				requestAnimationFrame(function loop() {
+				  stats.update();
+				  requestAnimationFrame(loop)
+				});
+			  };
+			  script.src = '//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';
+			  document.head.appendChild(script);
+			})()
+			/*點擊toggle button*************************************/
+			$("#toggle").click(function() {
+			  turn = !turn;
+			  if (turn) $("#toggle").text('stop');
+			  else $("#toggle").text('start');
+			});
+
+			function init() {
+			  renderer = new THREE.WebGLRenderer({
+				antialias: true
+			  });
+			  document.body.appendChild(renderer.domElement);
+			  var width = window.innerWidth;
+			  var height = window.innerHeight;
+			  renderer.setSize(width, height);
+			  renderer.setClearColor(0x888888);
+
+			  scene = new THREE.Scene();
+			  let gridXZ = new THREE.GridHelper(170, 30, 'red', 'white'); //網格大小,n*n網格,十字顏色,網格顏色
+			  scene.add(gridXZ);
+			  let axes = new THREE.AxisHelper(10); //y軸高度
+			  scene.add(axes);
+
+			  camera = new THREE.PerspectiveCamera(50, width / height, 1, 10000);
+			  camera.position.y = 100;
+			  camera.position.z = 240;
+
+			  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+			  /*load火車模組**********************************************************************/
+			  let texLoader = new THREE.TextureLoader();
+			  texLoader.load(
+				'https://godmilk.github.io/GameProgramming/models/wood_oak_002_bump.jpg', // bumpmap
+				function(tex) {
+				  bumpMap = tex;
+				}
+			  );
+
+			  var loader = new THREE.ObjectLoader();
+			  loader.load('https://godmilk.github.io/GameProgramming/models/thomas-2.json',
+				function(obj) {
+				  obj.scale.set(10, 10, 10);
+				  scene.add(obj);
+				  thomasTrain = obj;
+				});
+
+			  /*load飛機模組**********************************************************************/
+			  loader = new THREE.ObjectLoader();
+			  loader.load('https://godmilk.github.io/GameProgramming/models/plane/plane.json',
+				function(obj) {
+				  obj.scale.set(0.01, 0.01, 0.01);
+				  scene.add(obj);
+				  plane = obj;
+				});
+
+			  /*自製火車模型************************************************/
+			  train = new THREE.Group();
+			  let trainBody = new THREE.Mesh(new THREE.BoxGeometry(40, 10, 20), new THREE.MeshNormalMaterial())
+			  trainBody.position.y = 5 + 3;
+
+			  let trainHead = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 15, 64), new THREE.MeshNormalMaterial());
+			  trainHead.position.x = 13;
+			  trainHead.position.y = 19;
+
+			  let wheel1 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel1.position.x = -15;
+			  wheel1.position.y = 4;
+			  wheel1.position.z = 8;
+			  wheel1.rotation.x = Math.PI / 2;
+			  let wheel2 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel2.position.x = -5;
+			  wheel2.position.y = 4;
+			  wheel2.position.z = 8;
+			  wheel2.rotation.x = Math.PI / 2;
+			  let wheel3 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel3.position.x = 5;
+			  wheel3.position.y = 4;
+			  wheel3.position.z = 8;
+			  wheel3.rotation.x = Math.PI / 2;
+			  let wheel4 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel4.position.x = 15;
+			  wheel4.position.y = 4;
+			  wheel4.position.z = 8;
+			  wheel4.rotation.x = Math.PI / 2;
+			  let wheel5 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel5.position.x = -15;
+			  wheel5.position.y = 4;
+			  wheel5.position.z = -8;
+			  wheel5.rotation.x = Math.PI / 2;
+			  let wheel6 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel6.position.x = -5;
+			  wheel6.position.y = 4;
+			  wheel6.position.z = -8;
+			  wheel6.rotation.x = Math.PI / 2;
+			  let wheel7 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel7.position.x = 5;
+			  wheel7.position.y = 4;
+			  wheel7.position.z = -8;
+			  wheel7.rotation.x = Math.PI / 2;
+			  let wheel8 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 64), new THREE.MeshNormalMaterial());
+			  wheel8.position.x = 15;
+			  wheel8.position.y = 4;
+			  wheel8.position.z = -8;
+			  wheel8.rotation.x = Math.PI / 2;
+
+			  train.add(trainBody);
+			  train.add(trainHead);
+			  train.add(wheel1);
+			  train.add(wheel2);
+			  train.add(wheel3);
+			  train.add(wheel4);
+			  train.add(wheel5);
+			  train.add(wheel6);
+			  train.add(wheel7);
+			  train.add(wheel8);
+			  scene.add(train);
+
+			  window.addEventListener('resize', onWindowResize, false);
+			}
+
+			function animate() {
+			  keyboard.update();
+			  if (keyboard.down("Z")) {
+				turn = !turn;
+				if (turn) $("#toggle").text('stop');
+				else $("#toggle").text('start');
+			  }
+
+			  controls.update();
+			  renderer.render(scene, camera);
+			  //重複幫火車模組貼材質
+			  if (bumpMap && thomasTrain) {
+				thomasTrain.traverse(
+				  function(mesh) {
+					if (mesh instanceof THREE.Mesh) {
+					  mesh.material.bumpMap = bumpMap;
+					  mesh.material.bumpScale = 0.2;
+					}
+				  });
+			  }
+			  //旋轉火車模組
+			  if (thomasTrain !== undefined) {
+				thomasTrain.position.set(40 * Math.cos(thomasAngle), 0, -40 * Math.sin(thomasAngle));
+				thomasTrain.rotation.y = thomasAngle;
+				if (turn) thomasAngle += 0.01;
+			  }
+			  //旋轉飛機模組
+			  if (upOrDown == "up" && turn) {
+				planeHeight += 0.2;
+				if (planeHeight >= 60) upOrDown = "down";
+			  } else if (upOrDown == "down" && turn) {
+				planeHeight -= 0.2;
+				if (planeHeight <= 40) upOrDown = "up";
+			  }
+			  if (plane !== undefined) {
+				plane.position.set(80 * Math.cos(planeAngle), planeHeight, -80 * Math.sin(planeAngle));
+				plane.rotation.y = planeAngle;
+				if (turn) planeAngle += 0.02;
+			  }
+			  //旋轉自製火車
+			  train.position.set(80 * Math.cos(myAngle), 0, 80 * Math.sin(myAngle));
+			  train.rotation.y = -myAngle - Math.PI / 2;
+			  if (turn) myAngle += 0.01;
+
+			  requestAnimationFrame(animate);
+			}
+
+			function onWindowResize() {
+			  camera.aspect = window.innerWidth / window.innerHeight;
+			  camera.updateProjectionMatrix();
+			  renderer.setSize(window.innerWidth, window.innerHeight);
+			}
+
+			window.focus();
+
+		</script>
+	</body>
+</html>

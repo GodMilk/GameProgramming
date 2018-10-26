@@ -75,19 +75,25 @@
 				  let ball = balls[i];
 				  if (this.pos.clone().distanceTo(ball.pos.clone()) <= distance && this.pos.clone().distanceTo(ball.pos.clone()) > 0 &&
 					this.pos.clone().sub(ball.pos.clone()).dot(this.vel.clone().sub(ball.vel.clone())) <= 0) {
-					let v1 = this.vel
-					let v2 = ball.vel
-					let m1 = 10,
-					  m2 = 10; //質量
+					let x1 = this.pos,x2 = ball.pos;
+					let v1 = this.vel,v2 = ball.vel;
+					let m1 = 10,m2 = 10; //質量
+					  
 					let v1x = (2 * m2 * v2.x + (m1 - m2) * v1.x) / (m1 + m2)
 					let v1z = (2 * m2 * v2.z + (m1 - m2) * v1.z) / (m1 + m2)
 					let v2x = (2 * m1 * v1.x + (m2 - m1) * v2.x) / (m1 + m2)
 					let v2z = (2 * m1 * v1.z + (m2 - m1) * v2.z) / (m1 + m2)
-
+					/* let newV1 = v1.sub(x1.sub(x2).multiplyScalar(2*m2*v1.sub(v2).dot(x1.sub(x2))).divideScalar((m1+m2)*x1.distanceToSquared (x2)) )
+					let newV2 = v2.sub(x2.sub(x1).multiplyScalar(2*m1*v2.sub(v1).dot(x2.sub(x1))).divideScalar((m1+m2)*x2.distanceToSquared (x1)) )*/
+					
 					this.vel.x = v1x
 					this.vel.z = v1z
 					balls[i].vel.x = v2x
 					balls[i].vel.z = v2z
+					/* newV1.y=0;
+					newV2.y=0;
+					this.vel = newV1;
+					balls[i].vel = newV2; */
 					
 					collisionSound.play()
 				  }

@@ -1,0 +1,398 @@
+<html>
+	<head>
+		<style>
+			#info {
+			  position: absolute;
+			  top: 2%;
+			  width: 100%;
+			  padding: 10px;
+			  text-align: center;
+			  color: #ffff00
+			}
+
+			body {
+			  overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="info">hw3 Keyframe Animation
+		</div>
+		<audio id="soundtrack" autoplay loop style="display:none">
+		<source src="https://godmilk.github.io/GameProgramming/sounds/Pharrell Williams-Happy.mp3" type='audio/mp3'>
+		</audio>
+		<script src="../js/three.min.js"></script>
+		<script src="../js/OrbitControls.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+		<script>
+			var soundTrack = $('#soundtrack').get(0);
+			var scene, renderer, camera;
+			var body, leftArm, rightArm, leftLeg, rightLeg;
+			var gcontrols = {
+			  lsZ: 0.01, // ls for left shoulder
+			  lsX: 0.02,
+			  lsY: 0.01,
+			  rsZ: 0.01, // rs for right shoulder
+			  rsX: 0.02,
+			  rsY: 0.01,
+			  llZ: 0.01, // ll for left leg
+			  llX: 0.02,
+			  llY: 0.01,
+			  rlZ: 0.01, // rl for right leg
+			  rlX: 0.02,
+			  rlY: 0.01,
+			  posY: 0.01
+			};
+			var pose1 = {
+			  lsZ: -0.195, // ls for left shoulder
+			  lsX: -1.166,
+			  lsY: 0.561,
+			  rsZ: 0.195, // rs for right shoulder
+			  rsX: 1.166,
+			  rsY: -0.561,
+			  llZ: -0.301, // ll for left leg
+			  llX: 0.897,
+			  llY: 0.091,
+			  rlZ: 0.301, // rl for right leg
+			  rlX: -0.897,
+			  rlY: 0.091,
+			  posY: 3
+			};
+			var pose2 = {
+			  lsZ: 0.195, // ls for left shoulder
+			  lsX: 1.166,
+			  lsY: 0.561,
+			  rsZ: -0.195, // rs for right shoulder
+			  rsX: -1.166,
+			  rsY: -0.561,
+			  llZ: -0.301, // ll for left leg
+			  llX: -0.897,
+			  llY: 0.091,
+			  rlZ: 0.301, // rl for right leg
+			  rlX: 0.897,
+			  rlY: 0.091,
+			  posY: -3
+			};
+			var pose3 = {
+			  lsZ: 0.01, // ls for left shoulder
+			  lsX: -3,
+			  lsY: 0.01,
+			  rsZ: 0.01, // rs for right shoulder
+			  rsX: -3,
+			  rsY: 0.01,
+			  llZ: 0.01, // ll for left leg
+			  llX: 0.02,
+			  llY: 0.01,
+			  rlZ: 0.01, // rl for right leg
+			  rlX: 0.02,
+			  rlY: 0.01,
+			  posY: 20
+			};
+			var pose4 = {
+			  lsZ: 0.01, // ls for left shoulder
+			  lsX: -1.632,
+			  lsY: -0.744,
+			  rsZ: 0.01, // rs for right shoulder
+			  rsX: -1.632,
+			  rsY: 0.744,
+			  llZ: -1.577, // ll for left leg
+			  llX: -0.402,
+			  llY: 1.581,
+			  rlZ: 1.577, // rl for right leg
+			  rlX: -0.402,
+			  rlY: -1.581,
+			  posY: -34.706
+			};
+			var keys = [
+			  [0, pose1],
+			  [0.1, pose2],
+			  [0.2, pose1],
+			  [0.3, pose2],
+			  [0.4, pose3],
+			  [0.5, pose1],
+			  [0.6, pose2],
+			  [0.7, pose1],
+			  [0.8, pose2],
+			  [0.9, pose4],
+			  [0.95, gcontrols],
+			  [1, pose1]
+			];
+			var T = 5;
+			var clock = new THREE.Clock();
+			var ts = clock.getElapsedTime()
+			var intKey = [];
+
+
+			///////////////////////
+			init();
+			animate();
+
+			function buildBody() {
+
+			  var body = new THREE.Object3D();
+
+			  let boxGeometry;
+			  let head = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 30), new THREE.MeshNormalMaterial());
+			  head.position.set(0, 95, 0);
+			  body.add(head);
+
+			  let torso = new THREE.Mesh(new THREE.BoxGeometry(40, 50, 20), new THREE.MeshNormalMaterial());
+			  torso.position.set(0, 60, 0);
+			  body.add(torso);
+
+			  let arm;
+			  leftArm = new THREE.Object3D();
+			  arm = new THREE.Mesh(new THREE.BoxGeometry(10, 40, 10), new THREE.MeshNormalMaterial());
+			  leftArm.add(arm);
+			  arm.position.set(-5, -20, 0);
+			  body.add(leftArm);
+			  leftArm.position.set(-20, 85, 0);
+
+			  rightArm = new THREE.Object3D();
+			  arm = new THREE.Mesh(new THREE.BoxGeometry(10, 40, 10), new THREE.MeshNormalMaterial());
+			  rightArm.add(arm);
+			  arm.position.set(5, -20, 0);
+			  body.add(rightArm);
+			  rightArm.position.set(20, 85, 0);
+
+			  let leg;
+			  leftLeg = new THREE.Object3D();
+			  leg = new THREE.Mesh(new THREE.BoxGeometry(10, 40, 10), new THREE.MeshNormalMaterial());
+			  leftLeg.add(leg);
+			  leg.position.set(-5, -20, 0);
+			  body.add(leftLeg);
+			  leftLeg.position.set(-5, 40, 0);
+
+			  rightLeg = new THREE.Object3D();
+			  leg = new THREE.Mesh(new THREE.BoxGeometry(10, 40, 10), new THREE.MeshNormalMaterial());
+			  rightLeg.add(leg);
+			  leg.position.set(5, -20, 0);
+			  body.add(rightLeg);
+			  rightLeg.position.set(5, 40, 0);
+
+			  return body;
+			}
+
+			function init() {
+
+			  var width = window.innerWidth;
+			  var height = window.innerHeight;
+
+			  renderer = new THREE.WebGLRenderer({
+				antialias: true
+			  });
+			  renderer.setSize(width, height);
+			  renderer.setClearColor(0x888888);
+
+			  document.body.appendChild(renderer.domElement);
+
+			  scene = new THREE.Scene();
+
+			  camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 10000);
+			  camera.position.y = 100;
+			  camera.position.z = 400;
+			  camera.lookAt(new THREE.Vector3(0, 0, 0));
+			  scene.add(camera);
+
+			  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+			  let gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+			  scene.add(gridXZ);
+
+			  window.addEventListener('resize', onWindowResize, false);
+			  /////////////////////////////////////////////////////////////////////////////
+			  body = buildBody();
+			  scene.add(body)
+
+			  var gui = new dat.GUI({
+				load: loadJSON()
+			  });
+			  gui.remember(gcontrols)
+			  gui.add(gcontrols, 'lsZ', -3.0, 0);
+			  gui.add(gcontrols, 'lsX', -3.0, 3.2);
+			  gui.add(gcontrols, 'lsY', -3.0, 3.2);
+			  gui.add(gcontrols, 'rsZ', 0, 3.0);
+			  gui.add(gcontrols, 'rsX', -3.0, 3.2);
+			  gui.add(gcontrols, 'rsY', -3.0, 3.2);
+
+			  gui.add(gcontrols, 'llZ', -3.0, 0);
+			  gui.add(gcontrols, 'llX', -3.0, 3.2);
+			  gui.add(gcontrols, 'llY', -3.0, 3.2);
+			  gui.add(gcontrols, 'rlZ', 0, 3.0);
+			  gui.add(gcontrols, 'rlX', -3.0, 3.2);
+			  gui.add(gcontrols, 'rlY', -3.0, 3.2);
+
+			  gui.add(gcontrols, 'posY', -40, 20);
+			  
+			  soundTrack.play();
+			}
+
+			function animate() {
+			  keyframe(clock.getElapsedTime())
+			  requestAnimationFrame(animate);
+			  render();
+			}
+
+			function onWindowResize() {
+			  var width = window.innerWidth,
+				height = window.innerHeight;
+			  camera.aspect = width / height;
+			  camera.updateProjectionMatrix();
+			  renderer.setSize(width, height);
+			}
+
+			function loadJSON() {
+			  return {
+				"closed": false,
+				"remembered": {
+				  "default": {
+					"0": {
+					  "lsZ": 0.01,
+					  "lsX": 0.02,
+					  "lsY": 0.01,
+					  "rsZ": 0.01,
+					  "rsX": 0.02,
+					  "rsY": 0.01,
+					  "llZ": 0.01,
+					  "llX": 0.02,
+					  "llY": 0.01,
+					  "rlZ": 0.01,
+					  "rlX": 0.02,
+					  "rlY": 0.01,
+					  "posY": 0.01
+					}
+				  },
+				  "pose1": {
+					"0": {
+					  "lsZ": -0.195, 
+					  "lsX": -1.166,
+					  "lsY": 0.561,
+					  "rsZ": 0.195, 
+					  "rsX": 1.166,
+					  "rsY": -0.561,
+					  "llZ": -0.301, 
+					  "llX": 0.897,
+					  "llY": 0.091,
+					  "rlZ": 0.301, 
+					  "rlX": -0.897,
+					  "rlY": 0.091,
+					  "posY": 3
+					}
+				  },
+				  "pose2": {
+					"0": {
+					  "lsZ": 0.195, // ls for left shoulder
+					  "lsX": 1.166,
+					  "lsY": 0.561,
+					  "rsZ": -0.195, // rs for right shoulder
+					  "rsX": -1.166,
+					  "rsY": -0.561,
+					  "llZ": -0.301, // ll for left leg
+					  "llX": -0.897,
+					  "llY": 0.091,
+					  "rlZ": 0.301, // rl for right leg
+					  "rlX": 0.897,
+					  "rlY": 0.091,
+					  "posY": -3
+					}
+				  },
+				  "pose3": {
+					"0": {
+					  "lsZ": 0.01, // ls for left shoulder
+					  "lsX": -3,
+					  "lsY": 0.01,
+					  "rsZ": 0.01, // rs for right shoulder
+					  "rsX": -3,
+					  "rsY": 0.01,
+					  "llZ": 0.01, // ll for left leg
+					  "llX": 0.02,
+					  "llY": 0.01,
+					  "rlZ": 0.01, // rl for right leg
+					  "rlX": 0.02,
+					  "rlY": 0.01,
+					  "posY": 20
+					}
+				  },
+				  "pose4": {
+					"0": {
+					  "lsZ": 0.01, // ls for left shoulder
+					  "lsX": -1.632,
+					  "lsY": -0.744,
+					  "rsZ": 0.01, // rs for right shoulder
+					  "rsX": -1.632,
+					  "rsY": 0.744,
+					  "llZ": -1.577, // ll for left leg
+					  "llX": -0.402,
+					  "llY": 1.581,
+					  "rlZ": 1.577, // rl for right leg
+					  "rlX": -0.402,
+					  "rlY": -1.581,
+					  "posY": -34.706
+					}
+				  }
+				},
+				"folders": {}
+			  }
+
+			}
+
+			function keyframe(t) {
+			  var s = ((t - ts) % T) / T;
+
+			  for (var i = 1; i < keys.length; i++) {
+				if (keys[i][0] > s) break;
+			  }
+				
+			  // take i-1
+			  var ii = i - 1;
+			  var a = (s - keys[ii][0]) / (keys[ii + 1][0] - keys[ii][0]);
+			  //console.log (a)
+			  intKey = [keys[ii][1].lsZ * (1 - a) + keys[ii + 1][1].lsZ * a,
+				keys[ii][1].lsY * (1 - a) + keys[ii + 1][1].lsY * a,
+				keys[ii][1].lsX * (1 - a) + keys[ii + 1][1].lsX * a,
+				
+				keys[ii][1].rsZ * (1 - a) + keys[ii + 1][1].rsZ * a,
+				keys[ii][1].rsY * (1 - a) + keys[ii + 1][1].rsY * a,
+				keys[ii][1].rsX * (1 - a) + keys[ii + 1][1].rsX * a,
+				
+				keys[ii][1].llZ * (1 - a) + keys[ii + 1][1].llZ * a,
+				keys[ii][1].llY * (1 - a) + keys[ii + 1][1].llY * a,
+				keys[ii][1].llX * (1 - a) + keys[ii + 1][1].llX * a,
+				
+				keys[ii][1].rlZ * (1 - a) + keys[ii + 1][1].rlZ * a,
+				keys[ii][1].rlY * (1 - a) + keys[ii + 1][1].rlY * a,
+				keys[ii][1].rlX * (1 - a) + keys[ii + 1][1].rlX * a,
+				keys[ii][1].posY * (1 - a) + keys[ii + 1][1].posY * a
+			  ];
+
+			}
+
+			function render() {
+			  leftArm.rotation.z = intKey[0]
+			  leftArm.rotation.y = intKey[1]
+			  leftArm.rotation.x = intKey[2]
+			  leftArm.rotation.order = 'ZXY';
+
+			  rightArm.rotation.z = intKey[3]
+			  rightArm.rotation.y = intKey[4]
+			  rightArm.rotation.x = intKey[5]
+			  rightArm.rotation.order = 'ZXY';
+
+			  leftLeg.rotation.z = intKey[6]
+			  leftLeg.rotation.y = intKey[7]
+			  leftLeg.rotation.x = intKey[8]
+			  leftLeg.rotation.order = 'ZXY';
+
+			  rightLeg.rotation.z = intKey[9]
+			  rightLeg.rotation.y = intKey[10]
+			  rightLeg.rotation.x = intKey[11]
+			  rightLeg.rotation.order = 'ZXY';
+
+			  body.position.y = intKey[12];
+
+			  renderer.render(scene, camera);
+			}
+
+		</script>
+	</body>
+</html>

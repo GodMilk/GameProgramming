@@ -95,7 +95,7 @@ class CCDSys {
 		if (iter < MAXITER)
 		  return 1;
 		else {
-		  console.log("do not converge");   // does not mean "fail"
+		  //console.log("do not converge");   // does not mean "fail"
 		                                    // sometimes just mean "target not reachable"
 		  return 0;
 		}

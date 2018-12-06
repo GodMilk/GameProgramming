@@ -18,13 +18,15 @@
 	<body>
 		<div id="info">hw4 air hockey &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;music:
 		  <button id="play" style="width:20%">Pause</button>
+		  <p id='powerInfo' style="text-align: left;font-size:26px;margin-top:50px;">強度: 無</p>
+		  <p id='def' style="text-align: left;font-size:26px;margin-top:50px;">擋下: 0次</p>
 		</div>
 		<audio id="collisionsound" style="display:none">
 		<source src="https://godmilk.github.io/GameProgramming/sounds/collision.wav" type='audio/wav'>
 		</audio>
 
 		<audio id="soundtrack" autoplay loop style="display:none">
-		<source src="https://godmilk.github.io/GameProgramming/sounds/bensound-cute.mp3" type='audio/mp3'>
+		<source src="https://godmilk.github.io/GameProgramming/sounds/bensound-theelevatorbossanova.mp3" type='audio/mp3'>
 		</audio>
 		<script src="../js/three.min.js"></script>
 		<script src="../js/OrbitControls.js"></script>
@@ -47,7 +49,6 @@
 				this.vel.add(this.force.clone().multiplyScalar(dt))
 				this.pos.add(this.vel.clone().multiplyScalar(dt))
 				this.collidingPlanes(planes)
-				this.collidingBalls(balls)
 				this.mesh.position.copy(this.pos)
 				this.light.position.copy(this.pos)
 				this.light.position.y += 20
@@ -63,34 +64,6 @@
 					this.pos.copy(plane.ptOnPl.clone().add(point.projectOnPlane(plane.normal)))
 					this.pos.add(plane.normal.clone().multiplyScalar(this.radius))
 					this.vel.sub(plane.normal.clone().multiplyScalar((1 + CR) * this.vel.dot(plane.normal)))
-					collisionSound.play()
-				  }
-				}
-			  }
-
-			  collidingBalls(balls) {
-				let distance = this.radius * 2; //2R
-				for (let i = 0; i < balls.length; i++) {
-				  let ball = balls[i];
-				  if (this.pos.clone().distanceTo(ball.pos.clone()) <= distance && this.pos.clone().distanceTo(ball.pos.clone()) > 0 &&
-					this.pos.clone().sub(ball.pos.clone()).dot(this.vel.clone().sub(ball.vel.clone())) <= 0) {
-					let x1 = this.pos,
-					  x2 = ball.pos;
-					let v1 = this.vel,
-					  v2 = ball.vel;
-					let m1 = 10,
-					  m2 = 10; //質量
-
-					let v1x = (2 * m2 * v2.x + (m1 - m2) * v1.x) / (m1 + m2)
-					let v1z = (2 * m2 * v2.z + (m1 - m2) * v1.z) / (m1 + m2)
-					let v2x = (2 * m1 * v1.x + (m2 - m1) * v2.x) / (m1 + m2)
-					let v2z = (2 * m1 * v1.z + (m2 - m1) * v2.z) / (m1 + m2)
-
-					this.vel.x = v1x
-					this.vel.z = v1z
-					balls[i].vel.x = v2x
-					balls[i].vel.z = v2z
-
 					collisionSound.play()
 				  }
 				}
@@ -140,10 +113,10 @@
 				this.link1.add(this.link2)
 				this.link2.position.x = 10
 
-				let paddle = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 4), mat)
+				let paddle = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 3), mat)
 				this.link2.add(paddle)
 				paddle.position.x = 10
-				paddle.position.y = 2
+				paddle.position.y = 1.5
 
 				return twoLink;
 
@@ -178,13 +151,15 @@
 			var mouse = new THREE.Vector2();
 			var pickables = [];
 			var mouseDown = false;
-			var hit = false;
+			var mouseUp = false;
+			var isHit = false;
 			var puck;
-			var planes = []
-			var balls = []
-
+			var planes = [];
+			var power;
+			var nTime = 0;
+			var count = 0;
+			var tmpX;
 			var clock = new THREE.Clock();
-			var paddlePos = new THREE.Vector3();
 
 			init();
 			animate();
@@ -293,15 +268,9 @@
 			  centerCircle.position.set(0, 0.1, 0)
 			  centerCircle.rotation.x = -Math.PI / 2;
 			  //////////////////////////////////////////////////////////////////////////////////
-			  /*let disk, ball;
+			  let disk;
 			  disk = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 2, 20), new THREE.MeshLambertMaterial());
-			  puck = new Ball(disk, 8, new THREE.Color(0x00ffff))
-			  puck.vel.set(10, 0, 15)
-			  puck.pos.set(-70, 13, 10)
-			  balls.push(puck)*/
-			  puck = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 2, 20), new THREE.MeshNormalMaterial());
-			  scene.add(puck);
-			  puck.position.y = 1
+			  puck = new Ball(disk, 3, new THREE.Color(0x00ffff))
 			  //////////////////////////////////////////////////////////////////////////////////////////
 			  let plane, wall
 			  wall = new THREE.Mesh(new THREE.BoxGeometry(112, 10, 6), new THREE.MeshPhongMaterial({
@@ -355,37 +324,17 @@
 
 			function onDocumentMouseDown(event) {
 			  mouseDown = true;
-			  hit = false;
+			  mouseUp = false;
+			  isHit = false;
+			  puck.pos.set(0, 1.5, 48)
+			  puck.update(0)
 			  processMove(event)
 			}
 
 			function onDocumentMouseUp(event) {
 			  mouseDown = false;
-			  hit = true;
-			  /*let startPos = new THREE.Vector3()
-			  startPos.copy ( pull.position )
-			  let midPos = new THREE.Vector3();
-			  midPos.copy(startPos).setLength(10)
-			  let finalPos = new THREE.Vector3()
-			  finalPos.set (0, -10, 0)
-			  setTimeout (shrink, 0);
-			  var s = 0;
-			  function shrink() {
-				keys = [ [0, startPos], [0.85, midPos], [1, finalPos] ]
-				for (var i = 1; i < 3; i++) {
-					if (keys[i][0] > s) break;
-				  // take i-1  
-				}
-				i = i-1;
-				
-				alpha = (s - keys[i][0])/(keys[i+1][0] - keys[i][0])
-				pos = keys[i][1].clone().multiplyScalar (1-alpha).add (keys[i+1][1].clone().multiplyScalar(alpha))
-				
-				pull.position.copy (pos); scaleSpringTex (pos)
-				s += 0.1
-				if (s < 1)
-					setTimeout (shrink,2)
-			  }*/
+			  mouseUp = true;
+			  tmpX = twoLinkArm.target.x;
 			}
 
 			function processMove(event) {
@@ -400,25 +349,106 @@
 			  raycaster.setFromCamera(mouse, camera);
 			  var intersects = raycaster.intersectObjects(pickables);
 			  if (intersects.length > 0) {
-				puck.position.copy(intersects[0].point);
-
-				console.log(puck.position.distanceTo(userRoot))
-
-				twoLinkArm.target.copy(twoLink.worldToLocal(puck.position.clone()))
-				twoLinkArm2.target.copy(twoLink2.worldToLocal(puck.position.clone()))
+				twoLinkArm.target.copy(twoLink.worldToLocal(intersects[0].point))
 			  }
 
+			  let targetZ = twoLinkArm.target.z;
+			  if (targetZ > -5) {
+				power = 0.2
+				$('#powerInfo').html("強度: 強");
+			  } else if (targetZ > -10 && targetZ <= -5) {
+				power = 0.15
+				$('#powerInfo').html("強度: 中上");
+			  } else if (targetZ > -15 && targetZ <= -10) {
+				power = 0.1
+				$('#powerInfo').html("強度: 適中");
+			  } else if (targetZ > -18 && targetZ <= -15) {
+				power = 0.05
+				$('#powerInfo').html("強度: 中下");
+			  } else if (targetZ <= -18) {
+				power = 0.01
+				$('#powerInfo').html("強度: 弱");
+			  }
 			}
 
 			function animate() {
-			  if (hit == true) {
-				/*balls.forEach(function(b) {
-				  b.update(0.1) //調整ball的速度
-				  
-				})
-				twoLinkArm.target.copy(twoLink.worldToLocal(puck.position.clone()))
-				twoLinkArm2.target.copy(twoLink2.worldToLocal(puck.position.clone()))
-				*/
+			  if (mouseUp) {
+				let targetX = twoLinkArm.target.x;
+				let targetZ = twoLinkArm.target.z;
+
+				if (!isHit) {
+				  if ((targetX != 0 && targetZ > -25) || (targetX == 0 && targetZ > -25)) {
+					targetZ -= 2;
+				  }
+				  if (targetX == 0 && targetZ < -25) {
+					targetZ = -25;
+				  }
+				  if (targetX > 0) {
+					targetX -= 2;
+					if (targetX < 0) {
+					  targetX = 0;
+					}
+				  } else if (targetX < 0) {
+					targetX += 2;
+					if (targetX > 0) {
+					  targetX = 0;
+					}
+				  }
+				  twoLinkArm.target.set(targetX, 1.5, targetZ)
+
+				  if (twoLinkArm.target.clone().distanceTo(puck.pos.clone()) == 73 && twoLinkArm.target.clone().distanceTo(puck.pos.clone()) > 0) {
+					isHit = true;
+					let x1 = twoLinkArm.target,
+					  x2 = puck.pos;
+					let v1 = twoLinkArm.target,
+					  v2 = puck.vel;
+					let m1 = 10,
+					  m2 = 10; //質量
+
+					let v1x = (2 * m2 * v2.x + (m1 - m2) * v1.x) / (m1 + m2)
+					let v1z = (2 * m2 * v2.z + (m1 - m2) * v1.z) / (m1 + m2)
+					let v2x = (2 * m1 * v1.x + (m2 - m1) * v2.x) / (m1 + m2)
+					let v2z = (2 * m1 * v1.z + (m2 - m1) * v2.z) / (m1 + m2)
+
+					if (tmpX >= 1) {
+					  puck.vel.x = -20
+					} else if (tmpX <= -1) {
+					  puck.vel.x = 20
+					} else {
+					  puck.vel.x = v2x
+					}
+					puck.vel.z = v2z
+					collisionSound.play()
+				  }
+				} else {
+
+				  puck.update(power)
+				  if (puck.pos.z < 0) {
+					twoLinkArm2.target.copy(twoLink2.worldToLocal(puck.pos.clone()))
+					console.log(twoLinkArm2.target.clone().distanceTo(puck.pos.clone()))
+					if (power == 0.1) {
+					  if (twoLinkArm2.target.clone().distanceTo(puck.pos.clone()) < 35.5 && twoLinkArm2.target.clone().distanceTo(puck.pos.clone()) > 0) {
+						console.log("123")
+						isHit = false;
+						nTime++;
+						count = 0;
+						$('#def').html("擋下: " + nTime + "次");
+						collisionSound.play()
+					  }
+					} else {
+					  if (twoLinkArm2.target.clone().distanceTo(puck.pos.clone()) == 22.5 && twoLinkArm2.target.clone().distanceTo(puck.pos.clone()) > 0) {
+						count++;
+						if (count >= 2) {
+						  isHit = false;
+						  nTime++;
+						  count = 0;
+						  $('#def').html("擋下: " + nTime + "次");
+						  collisionSound.play()
+						}
+					  }
+					}
+				  }
+				}
 			  }
 
 			  requestAnimationFrame(animate);

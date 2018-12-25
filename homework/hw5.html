@@ -7,7 +7,7 @@
 			  width: 100%;
 			  padding: 10px;
 			  text-align: center;
-			  color: #ffff00
+			  color: red
 			}
 
 			body {
@@ -16,7 +16,13 @@
 		</style>
 	</head>
 	<body>
-		<div id="info">MD2</div>
+		<div id="info"><span style="font-size:20px;">MD2</span><br/>
+			上鍵:前進、下鍵:後退、左鍵:逆時針旋轉、右鍵:順時針旋轉、空白鍵:跳躍<br/>
+			<button id="play" style="width:20%">Pause</button>
+		</div>
+		<audio id="soundtrack" autoplay loop style="display:none">
+			<source src="https://godmilk.github.io/GameProgramming/sounds/Audiomachine_Breath_and_Life.mp3" type='audio/mp3'>
+		</audio>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/94/three.min.js"></script>
 		<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 		<script src="https://godmilk.github.io/GameProgramming/newMD2/js/MD2Loader.js"></script>
@@ -63,12 +69,27 @@
 			var scene, renderer, camera;
 			var yoshiWrap;
 			var light;
+			var preX,preZ;
+			var treasure,treasure2;
+			var tHeight = 220;
+			var flag="top";
 
 			var box3, box3Helper;
 			var cameraControls;
 			var clock = new THREE.Clock();
 
-
+			var soundTrack = $('#soundtrack').get(0);
+			var isPaused = false;
+			$('#play').click(function() {
+			  isPaused = !isPaused;
+			  if (isPaused) {
+				$('#play').text('Play')
+				soundTrack.pause()
+			  } else {
+				$('#play').text('Pause')
+				soundTrack.play()
+			  }
+			});
 			init();
 			animate();
 
@@ -84,7 +105,7 @@
 
 			  // CAMERA
 			  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 4000);
-			  camera.position.set(0, 150, 1300);
+			  camera.position.set(0, 150, 600);
 
 			  // SCENE
 			  scene = new THREE.Scene();
@@ -197,9 +218,39 @@
 			  gyro.add(light, light.target);
 			  yoshiWrap.md2.root.add(gyro);
 
-			  box3 = new THREE.Box3();
+			  /*box3 = new THREE.Box3();
 			  box3Helper = new THREE.Box3Helper(box3)
-			  scene.add(box3Helper)
+			  scene.add(box3Helper)*/
+			  
+			  let platform = new THREE.Mesh (new THREE.BoxGeometry(200,34,200), new THREE.MeshLambertMaterial ({
+				color:0xff0000
+			  }))
+			  scene.add (platform)
+			  platform.position.set(200,5,100);
+			  
+			  let platform2 = new THREE.Mesh (new THREE.BoxGeometry(200,70,200), new THREE.MeshLambertMaterial ({
+				color:0xff0000
+			  }))
+			  scene.add (platform2)
+			  platform2.position.set(-200,5,100);
+			  
+			  let platform3 = new THREE.Mesh (new THREE.BoxGeometry(200,34,200), new THREE.MeshLambertMaterial ({
+				color:0xff0000
+			  }))
+			  scene.add (platform3)
+			  platform3.position.set(600,5,100);
+			  
+			  treasure = new THREE.Mesh (new THREE.IcosahedronGeometry(40,5), new THREE.MeshLambertMaterial ({
+				color:0xffff00
+			  }))
+			  scene.add (treasure)
+			  treasure.position.set(200,220,100);
+			  
+			  treasure2 = new THREE.Mesh (new THREE.IcosahedronGeometry(40,5), new THREE.MeshLambertMaterial ({
+				color:0xffff00
+			  }))
+			  scene.add (treasure2)
+			  treasure2.position.set(600,220,100);
 			}
 
 			function onWindowResize() {
@@ -211,6 +262,17 @@
 			  camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
 			  camera.updateProjectionMatrix();
 
+			}
+
+			function height (x,z) {
+				if (x > 100 && x < 300 && z > 0 && z < 200)
+				return 90;
+			  else if(x > 500 && x < 700 && z > 0 && z < 200)
+				return 90;
+			  else if(x < -100 && x > -300 && z > 0 && z < 200)
+				return -1;
+			  else
+				return 73
 			}
 
 			function onKeyDown(event) {
@@ -309,17 +371,39 @@
 
 			}
 
-
 			function animate() {
-
+				var tmp;
+			  
+			  tmp = height(yoshiWrap.md2.root.position.x, yoshiWrap.md2.root.position.z);
+			  if(tmp == -1){
+				yoshiWrap.md2.root.position.x=preX;
+				yoshiWrap.md2.root.position.z=preZ;
+			  }else{
+				preX=yoshiWrap.md2.root.position.x;
+				preZ=yoshiWrap.md2.root.position.z;
+				yoshiWrap.md2.root.position.y=tmp;
+			  }
+			  
+			  if(flag=="top"){
+				tHeight+=1;
+			  }else{
+				tHeight-=1;
+			  }
+			  if(treasure.position.y>230){
+				flag="down";
+			  }else if(treasure.position.y<210){
+				flag="top";
+			  }
+			  treasure.position.y=tHeight;
+			  treasure2.position.y=tHeight;
 			  requestAnimationFrame(animate);
 			  render();
-
+				
 			}
 
 			function render() {
 
-			  box3.setFromObject(yoshiWrap.md2.root)
+			  //box3.setFromObject(yoshiWrap.md2.root)
 
 			  var delta = clock.getDelta();
 			  if (yoshiWrap.md2) {
